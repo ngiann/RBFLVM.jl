@@ -1,7 +1,7 @@
 name = "RBFLVM"
 uuid = "6b89a223-e31d-4a8a-8cfc-426c8f4cf287"
 authors = ["ngiann <ngiann@gmail.com> and contributors"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 Clustering = "aaaa29a8-35af-508c-8bc3-b662a17a0fe5"
