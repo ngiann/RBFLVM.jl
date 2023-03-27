@@ -147,11 +147,11 @@ function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 1e-8, initmode=:pca)
         # Plot projections
         #--------------------------------------------
     
-        if Q == 2
-            figure(1); cla(); plot(Xopt[1,:], Xopt[2,:], "o"); axis("equal")
-        elseif Q == 3
-            figure(1); cla(); plot3D(Xopt[1,:], Xopt[2,:], Xopt[3,:], "o"); axis("equal")
-        end
+        # if Q == 2
+        #     figure(1); cla(); plot(Xopt[1,:], Xopt[2,:], "o"); axis("equal")
+        # elseif Q == 3
+        #     figure(1); cla(); plot3D(Xopt[1,:], Xopt[2,:], Xopt[3,:], "o"); axis("equal")
+        # end
     
         #------------------------------------------------#
         function predict(X₊)
