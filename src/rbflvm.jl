@@ -114,7 +114,7 @@ function rbflvm(Y; iterations = 1, M = 10, outer=1, JITTER = 1e-6)
     
         gradobjective!(s, x) = copyto!(s, Zygote.gradient(objective, x)[1])
 
-        opt = Optim.Options(iterations = iterations, show_trace = true, show_every = 1)
+        opt = Optim.Options(iterations = iterations, show_trace = true, show_every = 10)
     
         result = optimize(objective, gradobjective!, initp, LBFGS(), opt)
     
@@ -154,7 +154,7 @@ function rbflvm(Y; iterations = 1, M = 10, outer=1, JITTER = 1e-6)
         end
     
     
-        return predict, centresopt, result.minimum
+        return predict, centresopt, Xopt
     
     end
     
