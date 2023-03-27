@@ -1,39 +1,31 @@
+function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 1e-8, initmode=:pca)
 
-#--------------------------------------------------------#
-function rbflvm(Y; iterations = 1, M = 10, outer=1, JITTER = 1e-6)
-#--------------------------------------------------------#
-    
+        @assert(initmode == :pca || initmode == :random)
+        
         D = size(Y, 1)
         N = size(Y, 2)
-        Q = 2
-        σ₀² = 100.0
+        σ₀² = 100.0 # prior on weights
         
-        @printf("Running rbflvm with %d data items of dim %d\n", N, D)
-    
+        @printf("Running %dD-rbflvm with %d data items of dim %d\n", Q, N, D)
+        @printf("\t initialising in %s mode\n", string(initmode))
+
         #------------------------------------------#
         # initialise latent coordinates x with pca #
         #------------------------------------------#
     
-        X = let 
-        
-            model = MultivariateStats.fit(PCA, Y, maxoutdim = Q) 
-    
-            MultivariateStats.predict(model, Y)
-            
-            0.01*randn(Q, N)
-    
-        end
-    
+        X = initmode == :pca ?  
+            MultivariateStats.predict(MultivariateStats.fit(PCA, Y, maxoutdim = Q) , Y) : 0.1*randn(Q, N)
+
     
         #------------------------------------------#
         function unpack(param)
         #------------------------------------------#
-    
+  
             local MARK = 0
     
-            local X = reshape(param[MARK+1:MARK+2*N], Q, N)
+            local X = reshape(param[MARK+1:MARK+Q*N], Q, N)
     
-            MARK += 2N
+            MARK += Q*N
     
             local centres = reshape(param[MARK+1:MARK+Q*M], Q, M)
     
@@ -44,7 +36,7 @@ function rbflvm(Y; iterations = 1, M = 10, outer=1, JITTER = 1e-6)
             MARK +=2 
     
             @assert(MARK == length(param))
-    
+   
             return X, centres, σ², r
     
         end
@@ -53,7 +45,7 @@ function rbflvm(Y; iterations = 1, M = 10, outer=1, JITTER = 1e-6)
         #------------------------------------------------#
         function marginalloglikelihood(X, centres, σ², r)
         #------------------------------------------------#
-    
+
             local Φ = designmatrix(X, centres, r)
             
             local ℓ = zero(eltype(X))
@@ -102,10 +94,10 @@ function rbflvm(Y; iterations = 1, M = 10, outer=1, JITTER = 1e-6)
         #--------------------------------------------
         # Run optimisation
         #--------------------------------------------
-        
+       
         initp = [vec(X);vec(producecentres(X, M));randn(2)*3]
     
-    
+
         @time @show marginalloglikelihood(unpack(initp)...)
         @time @show marginalloglikelihood_fast(unpack(initp)...)
         # return 
@@ -137,7 +129,11 @@ function rbflvm(Y; iterations = 1, M = 10, outer=1, JITTER = 1e-6)
         # Plot projections
         #--------------------------------------------
     
-        figure(1); cla(); plot(Xopt[1,:], Xopt[2,:], "o"); axis("equal")
+        if Q == 2
+            figure(1); cla(); plot(Xopt[1,:], Xopt[2,:], "o"); axis("equal")
+        elseif Q == 3
+            figure(1); cla(); plot3D(Xopt[1,:], Xopt[2,:], Xopt[3,:], "o"); axis("equal")
+        end
     
         #------------------------------------------------#
         function predict(X₊)
