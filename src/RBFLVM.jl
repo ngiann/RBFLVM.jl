@@ -1,6 +1,9 @@
 module RBFLVM
 
-    using LinearAlgebra, Random, Distances, Distributions, Optim, StatsFuns
+    using Printf, PyPlot
+    using LinearAlgebra, Optim, Zygote
+    using Clustering, Distances
+    using MultivariateStats, StatsFuns, Distributions, Random
 
     include("rbf.jl")
     include("rbflvm.jl")
