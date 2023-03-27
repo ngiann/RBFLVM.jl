@@ -9,6 +9,7 @@
 ```julia-repl
 julia> X,labels = oildata();
 julia> pred, c, Z = rbflvm(X; iterations=1000, M=30, Q = 2, initmode=:pca)
+julia> using PyPlot # must be independently installed
 julia> for l in unique(labels)
             idx = findall(labels .== l)
             plot(Z[1,idx],Z[2,idx],"o")
@@ -103,7 +104,7 @@ function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 1e-8, initmode=:pca)
     
             ℓ += - 0.5*N*D*log(2π) - 0.5*D*logdetΣ - 0.5*tr(Y*(Σinv*Y'))
     
-            return ℓ - 1e-4*sum(X.^2)#pairwise(SqEuclidean(), X, centres))
+            return ℓ - 1e-6*sum(X.^2)#pairwise(SqEuclidean(), X, centres))
     
         end
     
