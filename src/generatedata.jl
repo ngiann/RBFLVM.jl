@@ -1,14 +1,14 @@
 function generatedata()
 
 
-    θ = collect(0:0.08:2π)
+    θ = collect(0:0.025:2π)
 
-    A = randn(2,10)
+    A = rand(2,10)*2
 
-    r = 2
+    r = 1
     
-    [sin.(θ)*r cos.(θ)*r]* A
+    X= [sin.(θ)*r cos.(θ)*r]* A
 
-
+    X .+ randn(size(X))*0.01
 
 end
