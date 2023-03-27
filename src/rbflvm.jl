@@ -1,7 +1,24 @@
+"""
+# Basic use:
+
+    pred, centres, Z = rbflvm(X; iterations=1000, M=30, Q = 2, initmode=:pca)
+
+
+# Example
+
+```julia-repl
+julia> X,labels = oildata();
+julia> pred, c, Z = rbflvm(X; iterations=1000, M=30, Q = 2, initmode=:pca)
+julia> for l in unique(labels)
+            idx = findall(labels .== l)
+            plot(Z[1,idx],Z[2,idx],"o")
+       end
+```
+"""
 function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 1e-8, initmode=:pca)
 
         @assert(initmode == :pca || initmode == :random)
-        
+
         D = size(Y, 1)
         N = size(Y, 2)
         σ₀² = 100.0 # prior on weights
