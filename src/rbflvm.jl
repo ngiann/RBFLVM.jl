@@ -115,9 +115,9 @@ function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 1e-8, initmode=:pca)
        
         initp = [vec(X);vec(producecentres(X, M));randn(2)*3]
     
-
-        @time @show marginalloglikelihood(unpack(initp)...)
-        @time @show marginalloglikelihood_fast(unpack(initp)...)
+        ############ NUMERICAL TEST ############
+        # @time @show marginalloglikelihood(unpack(initp)...)
+        # @time @show marginalloglikelihood_fast(unpack(initp)...)
         # return 
     
         objective(x) = -marginalloglikelihood_fast(unpack(x)...)
