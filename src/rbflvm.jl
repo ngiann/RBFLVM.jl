@@ -7,7 +7,7 @@
 # Example
 
 ```julia-repl
-julia> X,labels = oildata();
+julia> X, labels = load_oil();
 julia> pred, c, Z = rbflvm(X; iterations=1000, M=30, Q = 2, initmode=:pca)
 julia> using PyPlot # must be independently installed
 julia> for l in unique(labels)
