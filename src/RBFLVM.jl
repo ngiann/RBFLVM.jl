@@ -1,6 +1,6 @@
 module RBFLVM
 
-    using Printf, PyPlot, JLD2
+    using Printf, JLD2
     using LinearAlgebra, Optim, Zygote
     using Clustering, Distances
     using MultivariateStats, StatsFuns, Distributions, Random
