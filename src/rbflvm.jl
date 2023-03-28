@@ -16,9 +16,11 @@ julia> for l in unique(labels)
        end
 ```
 """
-function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 1e-8, initmode=:pca)
+function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 1e-8, initmode=:pca, seed = 1)
 
         @assert(initmode == :pca || initmode == :random)
+
+        rg = MersenneTwister(seed)
 
         D = size(Y, 1)
         N = size(Y, 2)
@@ -26,13 +28,14 @@ function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 1e-8, initmode=:pca)
         
         @printf("Running %dD-rbflvm with %d data items of dim %d\n", Q, N, D)
         @printf("\t initialising in %s mode\n", string(initmode))
+        @printf("\t random seed is %d\n", seed)
 
         #------------------------------------------#
         # initialise latent coordinates x with pca #
         #------------------------------------------#
     
         X = initmode == :pca ?  
-            MultivariateStats.predict(MultivariateStats.fit(PCA, Y, maxoutdim = Q) , Y) : 0.1*randn(Q, N)
+            MultivariateStats.predict(MultivariateStats.fit(PCA, Y, maxoutdim = Q) , Y) : 0.1*randn(rg, Q, N)
 
     
         #------------------------------------------#
@@ -113,7 +116,7 @@ function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 1e-8, initmode=:pca)
         # Run optimisation
         #--------------------------------------------
        
-        initp = [vec(X);vec(producecentres(X, M));randn(2)*3]
+        initp = [vec(X);vec(producecentres(X, M));randn(rg, 2)*3]
     
         ############ NUMERICAL TEST ############
         # @time @show marginalloglikelihood(unpack(initp)...)
