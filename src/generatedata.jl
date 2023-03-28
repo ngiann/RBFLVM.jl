@@ -1,6 +1,5 @@
 function generatedata()
 
-
     θ = collect(0:0.025:2π)
 
     A = rand(2,10)*2

@@ -1,5 +1,7 @@
 function oildata()
 
+    joinpath(dirname(pathof(GPCCData)), "src/Data/")
+
     data = JLD2.load("oil.jld2")
 
     X = Matrix(data["T"]')
