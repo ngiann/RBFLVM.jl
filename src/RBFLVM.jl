@@ -5,11 +5,9 @@ module RBFLVM
     using Clustering, Distances
     using MultivariateStats, StatsFuns, Distributions, Random
 
-    # include("rbf.jl")
     include("rbflvm.jl")
-    # include("generatedata.jl")
-    include("oildata.jl")
+    include("loaddata.jl")
 
-    export rbflvm, oildata
+    export rbflvm, load_oil, load_iris, load_digits
 
 end
