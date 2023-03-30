@@ -107,7 +107,7 @@ function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 1e-8, initmode=:pca, 
     
             ℓ += - 0.5*N*D*log(2π) - 0.5*D*logdetΣ - 0.5*tr(Y*(Σinv*Y'))
     
-            return ℓ - 1e-6*sum(X.^2)#pairwise(SqEuclidean(), X, centres))
+            return ℓ - 1e-6*sum(X.^2)
     
         end
     
