@@ -16,7 +16,7 @@ julia> for l in unique(labels)
        end
 ```
 """
-function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 0.0, η=0.0, initmode=:pca, seed = 1)
+function rbflvm(Y; Q = 2, iterations = 1, M = 10, η=1e-4, initmode=:pca, seed = 1)
 
         @assert(initmode == :pca || initmode == :random)
 
@@ -24,7 +24,7 @@ function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 0.0, η=0.0, initmode
 
         D = size(Y, 1)
         N = size(Y, 2)
-        α = 1/1000.0 # prior precision on weights
+        α = 100.0 # prior precision on weights
         
         @printf("Running %dD-rbflvm with %d data items of dim %d\n", Q, N, D)
         @printf("\t initialising in %s mode\n", string(initmode))
@@ -109,16 +109,16 @@ function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 0.0, η=0.0, initmode
     
         end
 
+
         #-----------------------------------------------------#
         function calculatevariationalposterior(X, centres, β, r)
         #-----------------------------------------------------#
     
             local Φ = designmatrix(X, centres, r)
 
-            local C⁻¹ = α*I + β*(Φ'*Φ) # Note: same for all dimensions
+            local C⁻¹ = α*I + β*(Φ'*Φ)  # Eq. 3.54 in PRML # Note: same for all dimensions
 
-            local μ = β * (C⁻¹\(Φ'*Y'))
-
+            local μ = β * (C⁻¹\(Φ'*Y')) # Eq. 3.53 in PRML
             
             return μ, C⁻¹
 
@@ -169,7 +169,7 @@ function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 0.0, η=0.0, initmode
         # Run optimisation
         #--------------------------------------------
        
-        initp = [vec(X);vec(producecentres(X, M));randn(rg, 2)*3]
+        initp = [vec(X);vec(producecentres(X, M));randn(rg, 2)*1]
     
         ############ NUMERICAL TEST ############
         # let
@@ -188,7 +188,7 @@ function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 0.0, η=0.0, initmode
     
         result = optimize(objective, gradobjective!, initp, LBFGS(), opt)
     
-        Xopt, centresopt, σ²opt, ropt = unpack(result.minimizer)
+        Xopt, centresopt, βopt, ropt = unpack(result.minimizer)
         
       
         #--------------------------------------------
@@ -197,12 +197,13 @@ function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 0.0, η=0.0, initmode
     
         Φ = designmatrix(Xopt, centresopt, ropt)
     
-        Σpostinv = (1/σ₀²)*I + (1/σ²opt)*Φ'*Φ # Eq. 3.54 in PRML
+        # Σpostinv = (1/σ₀²)*I + (1/σ²opt)*Φ'*Φ # Eq. 3.54 in PRML
     
-        μpost    = (1/σ²opt)*(Σpostinv\(Φ'*Y'))  # Eq. 3.53 in PRML
+        # μpost    = (1/σ²opt)*(Σpostinv\(Φ'*Y'))  # Eq. 3.53 in PRML
     
     
-    
+        μpost, Σpostinv = calculatevariationalposterior(Xopt, centresopt, βopt, ropt)
+
         #--------------------------------------------
         # Plot projections
         #--------------------------------------------
