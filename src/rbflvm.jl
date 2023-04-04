@@ -124,7 +124,7 @@ function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 0.0, η=0.0, initmode
 
         end
     
-        
+
         #-----------------------------------------------------#
         function lowerbound(X, centres, β, r, μ, C⁻¹)
         #-----------------------------------------------------#
@@ -135,6 +135,9 @@ function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 0.0, η=0.0, initmode
            
             local C = (C⁻¹)\I; C= (C + C')/2
 
+            
+            # contribution from likelihood
+
             lb += -0.5*(N*D)*log(2π) + 0.5*(N*D)*log(β) 
            
             lb += -0.5 * β * sum(abs2.(Y' - Φ*μ))
@@ -142,13 +145,20 @@ function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 0.0, η=0.0, initmode
             lb += D * (-0.5 * β * tr(Φ*C*Φ'))
 
 
+            # contribution from prior
+
             lb += -0.5*(M*D)*log(2π) + 0.5*(M*D)*log(α)
             
             lb += -0.5 * α * sum(abs2.(μ))
 
             lb += D * (-0.5 * α * tr(C))
 
+
+            # contribution from entropy
+
             lb += D*M*0.5*(1+log(2π)) + 0.5*D*logdet(C)
+
+            # add penalty on latent coordinates
 
             return lb - η*sum(X.^2)
 
