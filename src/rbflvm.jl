@@ -99,7 +99,7 @@ function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 0.0, η=0.0, initmode
                 
                 β*I - β*I * Φ*((I*α + β*ΦTΦ) \ (Φ'*(β*I))),
     
-                -N*log(β) - M*log(α) + logdet(I*α + β*ΦTΦ)
+                -N*log(β) - (M+1)*log(α) + logdet(I*α + β*ΦTΦ) # Note the M+1
     
             end
     
@@ -135,7 +135,7 @@ function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 0.0, η=0.0, initmode
            
             local C = (C⁻¹)\I; C= (C + C')/2
 
-            
+
             # contribution from likelihood
 
             lb += -0.5*(N*D)*log(2π) + 0.5*(N*D)*log(β) 
@@ -147,7 +147,7 @@ function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 0.0, η=0.0, initmode
 
             # contribution from prior
 
-            lb += -0.5*(M*D)*log(2π) + 0.5*(M*D)*log(α)
+            lb += -0.5*((M+1)*D)*log(2π) + 0.5*((M+1)*D)*log(α) # Note the M+1 because of bias column in Φ
             
             lb += -0.5 * α * sum(abs2.(μ))
 
@@ -156,7 +156,7 @@ function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 0.0, η=0.0, initmode
 
             # contribution from entropy
 
-            lb += D*M*0.5*(1+log(2π)) + 0.5*D*logdet(C)
+            lb += D*(M+1)*0.5*(1+log(2π)) + 0.5*D*logdet(C)     # Note the M+1 because of bias column in Φ
 
             # add penalty on latent coordinates
 
@@ -172,15 +172,13 @@ function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 0.0, η=0.0, initmode
         initp = [vec(X);vec(producecentres(X, M));randn(rg, 2)*3]
     
         ############ NUMERICAL TEST ############
-        let
-            @show marginalloglikelihood(unpack(initp)...)
-            @show marginalloglikelihood_fast(unpack(initp)...)
-            
-            
-            local μ, C⁻¹ = calculatevariationalposterior(unpack(initp)...)
-            @show lowerbound(unpack(initp)..., μ, C⁻¹)
-            return 
-        end
+        # let
+        #     @show marginalloglikelihood(unpack(initp)...)
+        #     @show marginalloglikelihood_fast(unpack(initp)...)
+        #     local μ, C⁻¹ = calculatevariationalposterior(unpack(initp)...)
+        #     @show lowerbound(unpack(initp)..., μ, C⁻¹)
+        #     return 
+        # end
     
         objective(x) = -marginalloglikelihood_fast(unpack(x)...)
     
@@ -252,7 +250,6 @@ function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 0.0, η=0.0, initmode
     
         D² = pairwise(SqEuclidean(), X, centres)
     
-        return exp.(-D²/(2*r^2))
         [exp.(-D²/(2*r^2)) ones(N)]
     
     end
