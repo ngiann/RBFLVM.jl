@@ -16,7 +16,7 @@ julia> for l in unique(labels)
        end
 ```
 """
-function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 1e-8, initmode=:pca, seed = 1)
+function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 0.0, η=0.0, initmode=:pca, seed = 1)
 
         @assert(initmode == :pca || initmode == :random)
 
@@ -24,7 +24,7 @@ function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 1e-8, initmode=:pca, 
 
         D = size(Y, 1)
         N = size(Y, 2)
-        σ₀² = 100.0 # prior on weights
+        α = 1/1000.0 # prior precision on weights
         
         @printf("Running %dD-rbflvm with %d data items of dim %d\n", Q, N, D)
         @printf("\t initialising in %s mode\n", string(initmode))
@@ -52,26 +52,26 @@ function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 1e-8, initmode=:pca, 
     
             MARK += Q*M
     
-            local σ², r = exp(param[end-1]), param[end]
+            local β, r = 1/exp(param[end-1]), param[end]
     
             MARK +=2 
     
             @assert(MARK == length(param))
    
-            return X, centres, σ², r
+            return X, centres, β, r
     
         end
     
     
         #------------------------------------------------#
-        function marginalloglikelihood(X, centres, σ², r)
+        function marginalloglikelihood(X, centres, β, r)
         #------------------------------------------------#
 
             local Φ = designmatrix(X, centres, r)
             
             local ℓ = zero(eltype(X))
-    
-            local lik = MvNormal(zeros(N), (σ² + JITTER)*I + (Φ*Φ')/σ₀²)
+
+            local lik = MvNormal(zeros(N), (1/β)*I + (Φ*Φ')/α)
             
             for d in 1:D
             
@@ -79,36 +79,79 @@ function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 1e-8, initmode=:pca, 
             
             end
     
-            return ℓ - 1e-6*sum(X.^2)
+            return ℓ - η*sum(X.^2)
     
         end
     
         #-----------------------------------------------------#
-        function marginalloglikelihood_fast(X, centres, σ², r)
+        function marginalloglikelihood_fast(X, centres, β, r)
         #-----------------------------------------------------#
     
             local Φ = designmatrix(X, centres, r)
     
             local ℓ = zero(eltype(X))
     
-            # Σ = (σ² + JITTER)*I + (Φ*Φ')/σ₀²
+            # local Σ = I/β + (Φ*Φ')/α
     
            local Σinv, logdetΣ = let
     
-                α = 1/(σ² + JITTER)
-    
                 ΦTΦ = Φ'*Φ
                 
-                α*I - α*I * (1/σ₀²) * Φ*((I + (α/σ₀²)*ΦTΦ) \ (Φ'*(α*I))),
+                β*I - β*I * Φ*((I*α + β*ΦTΦ) \ (Φ'*(β*I))),
     
-                N*log(σ² + JITTER) + logdet(I + (α/σ₀²)*ΦTΦ)
+                -N*log(β) - M*log(α) + logdet(I*α + β*ΦTΦ)
     
             end
     
             ℓ += - 0.5*N*D*log(2π) - 0.5*D*logdetΣ - 0.5*tr(Y*(Σinv*Y'))
     
-            return ℓ - 1e-6*sum(X.^2)
+            return ℓ - η*sum(X.^2)
     
+        end
+
+        #-----------------------------------------------------#
+        function calculatevariationalposterior(X, centres, β, r)
+        #-----------------------------------------------------#
+    
+            local Φ = designmatrix(X, centres, r)
+
+            local C⁻¹ = α*I + β*(Φ'*Φ) # Note: same for all dimensions
+
+            local μ = β * (C⁻¹\(Φ'*Y'))
+
+            
+            return μ, C⁻¹
+
+        end
+    
+        
+        #-----------------------------------------------------#
+        function lowerbound(X, centres, β, r, μ, C⁻¹)
+        #-----------------------------------------------------#
+    
+            local Φ = designmatrix(X, centres, r)
+
+            local lb = zero(eltype(centres))
+           
+            local C = (C⁻¹)\I; C= (C + C')/2
+
+            lb += -0.5*(N*D)*log(2π) + 0.5*(N*D)*log(β) 
+           
+            lb += -0.5 * β * sum(abs2.(Y' - Φ*μ))
+
+            lb += D * (-0.5 * β * tr(Φ*C*Φ'))
+
+
+            lb += -0.5*(M*D)*log(2π) + 0.5*(M*D)*log(α)
+            
+            lb += -0.5 * α * sum(abs2.(μ))
+
+            lb += D * (-0.5 * α * tr(C))
+
+            lb += D*M*0.5*(1+log(2π)) + 0.5*D*logdet(C)
+
+            return lb - η*sum(X.^2)
+
         end
     
     
@@ -119,9 +162,15 @@ function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 1e-8, initmode=:pca, 
         initp = [vec(X);vec(producecentres(X, M));randn(rg, 2)*3]
     
         ############ NUMERICAL TEST ############
-        # @time @show marginalloglikelihood(unpack(initp)...)
-        # @time @show marginalloglikelihood_fast(unpack(initp)...)
-        # return 
+        let
+            @show marginalloglikelihood(unpack(initp)...)
+            @show marginalloglikelihood_fast(unpack(initp)...)
+            
+            
+            local μ, C⁻¹ = calculatevariationalposterior(unpack(initp)...)
+            @show lowerbound(unpack(initp)..., μ, C⁻¹)
+            return 
+        end
     
         objective(x) = -marginalloglikelihood_fast(unpack(x)...)
     
@@ -193,6 +242,7 @@ function rbflvm(Y; Q = 2, iterations = 1, M = 10, JITTER = 1e-8, initmode=:pca, 
     
         D² = pairwise(SqEuclidean(), X, centres)
     
+        return exp.(-D²/(2*r^2))
         [exp.(-D²/(2*r^2)) ones(N)]
     
     end
